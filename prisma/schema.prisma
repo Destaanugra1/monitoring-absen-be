@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum KeaktifanStatus {
+  HIJAU
+  KUNING
+  MERAH
+}
+
+// Clerk user mirror table (sync on login)
+model User {
+  id               String   @id // Clerk userId
+  email            String?  @unique
+  first_name       String?
+  last_name        String?
+  image_url        String?
+  last_sign_in_at  DateTime?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+// Peserta
+model Peserta {
+  id         Int          @id @default(autoincrement())
+  nama       String
+  keaktifan  Keaktifan[]
+}
+
+// Hari
+model Hari {
+  id       Int       @id @default(autoincrement())
+  nama_hari String
+  tanggal  DateTime
+  materi   Materi[]
+}
+
+// Materi
+model Materi {
+  id             Int        @id @default(autoincrement())
+  id_hari        Int
+  judul_materi   String
+  pemateri       String?
+  waktu_mulai    DateTime
+  waktu_selesai  DateTime
+  // Optional lock to stop edits after 23:59
+  locked         Boolean    @default(false)
+  locked_at      DateTime?
+
+  hari       Hari       @relation(fields: [id_hari], references: [id], onDelete: Cascade)
+  keaktifan  Keaktifan[]
+
+  @@index([id_hari])
+}
+
+// Keaktifan
+model Keaktifan {
+  id          Int              @id @default(autoincrement())
+  id_peserta  Int
+  id_materi   Int
+  status      KeaktifanStatus
+  timestamp   DateTime         @default(now())
+
+  peserta     Peserta          @relation(fields: [id_peserta], references: [id], onDelete: Cascade)
+  materi      Materi           @relation(fields: [id_materi], references: [id], onDelete: Cascade)
+
+  @@unique([id_peserta, id_materi])
+  @@index([id_materi])
+}
