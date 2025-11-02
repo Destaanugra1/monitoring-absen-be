@@ -10,13 +10,25 @@ async function createMateri(req, res, next) {
     const hari = await prisma.hari.findUnique({ where: { id: Number(id_hari) } })
     if (!hari) return res.status(404).json({ error: 'Hari not found' })
 
+    // Convert time format "HH:mm" to DateTime
+    // Using hari.tanggal as the date and combining with time
+    const hariDate = new Date(hari.tanggal)
+    const [startHour, startMinute] = waktu_mulai.split(':').map(Number)
+    const [endHour, endMinute] = waktu_selesai.split(':').map(Number)
+    
+    const waktuMulai = new Date(hariDate)
+    waktuMulai.setHours(startHour, startMinute, 0, 0)
+    
+    const waktuSelesai = new Date(hariDate)
+    waktuSelesai.setHours(endHour, endMinute, 0, 0)
+
     const materi = await prisma.materi.create({
       data: {
         id_hari: Number(id_hari),
         judul_materi,
         pemateri: pemateri || null,
-        waktu_mulai: new Date(waktu_mulai),
-        waktu_selesai: new Date(waktu_selesai),
+        waktu_mulai: waktuMulai,
+        waktu_selesai: waktuSelesai,
       }
     })
     res.status(201).json(materi)
@@ -26,8 +38,20 @@ async function createMateri(req, res, next) {
 async function getMateriByHari(req, res, next) {
   try {
     const id_hari = Number(req.params.id_hari)
-    const items = await prisma.materi.findMany({ where: { id_hari }, orderBy: { waktu_mulai: 'asc' } })
-    res.json(items)
+    const items = await prisma.materi.findMany({ 
+      where: { id_hari }, 
+      orderBy: { waktu_mulai: 'asc' } 
+    })
+    
+    // Convert DateTime back to HH:mm format for frontend
+    const formattedItems = items.map(item => ({
+      ...item,
+      waktu_mulai: item.waktu_mulai.toTimeString().slice(0, 5), // "HH:mm"
+      waktu_selesai: item.waktu_selesai.toTimeString().slice(0, 5), // "HH:mm"
+      locked: false // You can add logic here to determine if materi is locked
+    }))
+    
+    res.json(formattedItems)
   } catch (e) { next(e) }
 }
 

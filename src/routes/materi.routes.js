@@ -1,12 +1,12 @@
 const { Router } = require('express')
 const { createMateri, getMateriByHari, deleteMateri, unlockMateri } = require('../controllers/materi.controller')
-const { requirePanitia } = require('../middlewares/auth')
+const { requireAuthDev } = require('../middlewares/authDev')
 
 const router = Router()
 
-router.post('/', requirePanitia(), createMateri)
+router.post('/', requireAuthDev(), createMateri)
 router.get('/hari/:id_hari', getMateriByHari)
-router.delete('/:id', requirePanitia(), deleteMateri)
-router.post('/:id/unlock', requirePanitia(), unlockMateri)
+router.delete('/:id', requireAuthDev(), deleteMateri)
+router.post('/:id/unlock', requireAuthDev(), unlockMateri)
 
 module.exports = router

@@ -1,9 +1,9 @@
 const { Router } = require('express')
-const { exportHariExcel } = require('../controllers/upload.controller')
-const { requirePanitia } = require('../middlewares/auth')
+const { exportHariExcel } = require('../controllers/export.controller')
+const { requireAuth } = require('@clerk/express')
 
 const router = Router()
 
-router.get('/hari/:id_hari', requirePanitia(), exportHariExcel)
+router.get('/hari/:id_hari', requireAuth(), exportHariExcel)
 
 module.exports = router
