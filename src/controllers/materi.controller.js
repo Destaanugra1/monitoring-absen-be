@@ -1,5 +1,18 @@
 const { prisma } = require('../utils/prisma')
 
+function formatHHmmJakarta(date) {
+  const dtf = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const parts = dtf.formatToParts(date)
+  const h = parts.find(p => p.type === 'hour')?.value || '00'
+  const m = parts.find(p => p.type === 'minute')?.value || '00'
+  return `${h}:${m}`
+}
+
 async function createMateri(req, res, next) {
   try {
     const { id_hari, judul_materi, pemateri, waktu_mulai, waktu_selesai } = req.body
@@ -46,9 +59,9 @@ async function getMateriByHari(req, res, next) {
     // Convert DateTime back to HH:mm format for frontend
     const formattedItems = items.map(item => ({
       ...item,
-      waktu_mulai: item.waktu_mulai.toTimeString().slice(0, 5), // "HH:mm"
-      waktu_selesai: item.waktu_selesai.toTimeString().slice(0, 5), // "HH:mm"
-      locked: false // You can add logic here to determine if materi is locked
+      waktu_mulai: formatHHmmJakarta(item.waktu_mulai),
+      waktu_selesai: formatHHmmJakarta(item.waktu_selesai),
+      locked: item.locked ?? false,
     }))
     
     res.json(formattedItems)
@@ -78,3 +91,42 @@ async function unlockMateri(req, res, next) {
 }
 
 module.exports.unlockMateri = unlockMateri
+
+// Update materi
+async function updateMateri(req, res, next) {
+  try {
+    const id = Number(req.params.id)
+    const existing = await prisma.materi.findUnique({ where: { id } })
+    if (!existing) return res.status(404).json({ error: 'Materi not found' })
+
+    const { judul_materi, pemateri, waktu_mulai, waktu_selesai } = req.body || {}
+    const data = {}
+
+    if (typeof judul_materi === 'string') data.judul_materi = judul_materi
+    if (typeof pemateri !== 'undefined') data.pemateri = pemateri || null
+
+    // If time strings provided, combine with parent hari date
+    if (typeof waktu_mulai === 'string' || typeof waktu_selesai === 'string') {
+      const hari = await prisma.hari.findUnique({ where: { id: existing.id_hari } })
+      if (!hari) return res.status(404).json({ error: 'Hari not found' })
+      const hariDate = new Date(hari.tanggal)
+      if (typeof waktu_mulai === 'string') {
+        const [h, m] = waktu_mulai.split(':').map(Number)
+        const d = new Date(hariDate)
+        d.setHours(h || 0, m || 0, 0, 0)
+        data.waktu_mulai = d
+      }
+      if (typeof waktu_selesai === 'string') {
+        const [h, m] = waktu_selesai.split(':').map(Number)
+        const d = new Date(hariDate)
+        d.setHours(h || 0, m || 0, 0, 0)
+        data.waktu_selesai = d
+      }
+    }
+
+    const updated = await prisma.materi.update({ where: { id }, data })
+    return res.json(updated)
+  } catch (e) { next(e) }
+}
+
+module.exports.updateMateri = updateMateri
