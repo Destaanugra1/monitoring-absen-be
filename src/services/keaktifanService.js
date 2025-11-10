@@ -19,7 +19,7 @@ async function ensureNotLockedAndMaybeLock(id_materi) {
     throw err
   }
 
-  // If already locked, block
+  // If already locked, block (admin explicit lock always wins)
   if (materi.locked) {
     const err = new Error('Locked: input ditutup')
     err.status = 423 // Locked
@@ -31,7 +31,11 @@ async function ensureNotLockedAndMaybeLock(id_materi) {
   const now = new Date()
 
   if (now > deadline) {
-    // Auto-lock and block
+    // If admin has explicitly unlocked (override), allow input even after deadline
+    if (materi.unlock_override) {
+      return { materi, deadline, override: true }
+    }
+    // Otherwise auto-lock and block
     await prisma.materi.update({
       where: { id: materi.id },
       data: { locked: true, locked_at: new Date() },

@@ -84,7 +84,7 @@ async function unlockMateri(req, res, next) {
     const id = Number(req.params.id)
     const updated = await prisma.materi.update({
       where: { id },
-      data: { locked: false, locked_at: null },
+      data: { locked: false, locked_at: null, unlock_override: true },
     })
     res.json({ message: 'Materi unlocked', materi: updated })
   } catch (e) { next(e) }

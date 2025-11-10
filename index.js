@@ -8,6 +8,8 @@ const materiRoutes = require('./src/routes/materi.routes')
 const keaktifanRoutes = require('./src/routes/keaktifan.routes')
 const exportRoutes = require('./src/routes/export.routes')
 const userRoutes = require('./src/routes/user.routes')
+const adminRoutes = require('./src/routes/admin.routes')
+const setupRoutes = require('./src/routes/setup.routes')
 const { getAuth } = require('@clerk/express')
 const { notFoundHandler, errorHandler } = require('./src/middlewares/errors')
 const { prisma } = require('./src/utils/prisma')
@@ -71,6 +73,8 @@ app.use('/api/materi', materiRoutes)
 app.use('/api/keaktifan', keaktifanRoutes)
 app.use('/api/export', exportRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/admin', adminRoutes)
+app.use('/api/setup', setupRoutes)
 
 // Optional: quick check to see the current Clerk user stored in DB
 app.get('/me', async (req, res) => {

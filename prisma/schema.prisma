@@ -58,6 +58,8 @@ model Materi {
   // Optional lock to stop edits after 23:59
   locked         Boolean    @default(false)
   locked_at      DateTime?
+  // When true, admin has explicitly unlocked and allows inputs past deadline
+  unlock_override Boolean   @default(false)
 
   hari       Hari       @relation(fields: [id_hari], references: [id], onDelete: Cascade)
   keaktifan  Keaktifan[]
