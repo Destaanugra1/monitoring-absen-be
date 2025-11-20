@@ -8,7 +8,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "vercel-build": "prisma generate && prisma migrate deploy"
+  },
+  "engines": {
+    "node": ">=18.x"
   },
   "dependencies": {
     "@clerk/express": "^1.7.43",

@@ -19,7 +19,9 @@ const port = process.env.PORT || 5000
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow both ports
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL, 'https://your-app.vercel.app'] 
+    : ['http://localhost:3000', 'http://localhost:3001'], // Allow both ports in dev
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -92,6 +94,12 @@ app.get('/me', async (req, res) => {
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`)
-})
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`)
+  })
+}
+
+// Export for Vercel serverless
+module.exports = app
