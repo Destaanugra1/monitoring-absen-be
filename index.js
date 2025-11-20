@@ -20,7 +20,7 @@ const port = process.env.PORT || 5000
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, 'https://your-app.vercel.app'] 
+    ? [process.env.FRONTEND_URL, 'https://monitoring-absen-be.vercel.app/', 'https://dad-ftik.vercel.app'] 
     : ['http://localhost:3000', 'http://localhost:3001'], // Allow both ports in dev
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
