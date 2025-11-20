@@ -44,17 +44,20 @@ async function parsePesertaExcel(buffer) {
 }
 
 // Insert new Peserta, skipping existing ones by normalized name comparison
-async function savePesertaNames(names) {
+async function savePesertaNames(names, kelas = 'A') {
   const normalized = names.map(n => ({ raw: n, norm: normalizeName(n) })).filter(n => !!n.norm)
   if (normalized.length === 0) return { inserted: 0, skipped_existing: 0, total_in_file: 0 }
 
-  // Load all existing peserta names
-  const existing = await prisma.peserta.findMany({ select: { id: true, nama: true } })
+  // Load all existing peserta names for this kelas
+  const existing = await prisma.peserta.findMany({ 
+    where: { kelas },
+    select: { id: true, nama: true, kelas: true } 
+  })
   const existingSet = new Set(existing.map(p => normalizeName(p.nama)))
 
   const toInsert = normalized
     .filter(n => !existingSet.has(n.norm))
-    .map(n => ({ nama: n.raw.trim() }))
+    .map(n => ({ nama: n.raw.trim(), kelas }))
 
   if (toInsert.length > 0) {
     // Use createMany for efficiency
@@ -72,7 +75,7 @@ const STATUS_COLOR = {
 }
 
 // Export rekap keaktifan per hari ke Excel (returns Buffer)
-async function exportHariToExcelBuffer(id_hari) {
+async function exportHariToExcelBuffer(id_hari, kelas = null) {
   const ExcelJS = await importExcelJS()
   const hari = await prisma.hari.findUnique({ where: { id: Number(id_hari) } })
   if (!hari) {
@@ -81,8 +84,15 @@ async function exportHariToExcelBuffer(id_hari) {
     throw err
   }
 
-  const materi = await prisma.materi.findMany({ where: { id_hari: hari.id }, orderBy: { waktu_mulai: 'asc' } })
-  const peserta = await prisma.peserta.findMany({ orderBy: { id: 'asc' } })
+  const materiWhere = { id_hari: hari.id }
+  if (kelas) materiWhere.kelas = kelas
+  
+  const materi = await prisma.materi.findMany({ where: materiWhere, orderBy: { waktu_mulai: 'asc' } })
+  
+  const pesertaWhere = {}
+  if (kelas) pesertaWhere.kelas = kelas
+  
+  const peserta = await prisma.peserta.findMany({ where: pesertaWhere, orderBy: { id: 'asc' } })
   const materiIds = materi.map(m => m.id)
 
   const keaktifan = await prisma.keaktifan.findMany({

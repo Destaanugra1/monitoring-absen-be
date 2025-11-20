@@ -3,7 +3,12 @@ const { normalizeName } = require('../services/validationService')
 
 async function getAllPeserta(req, res, next) {
   try {
-    const data = await prisma.peserta.findMany({ orderBy: { id: 'asc' } })
+    const kelas = req.query.kelas // Optional filter
+    const where = {}
+    if (kelas && ['A', 'B', 'C'].includes(kelas)) {
+      where.kelas = kelas
+    }
+    const data = await prisma.peserta.findMany({ where, orderBy: { id: 'asc' } })
     res.json(data)
   } catch (e) { next(e) }
 }
@@ -27,19 +32,27 @@ async function deletePeserta(req, res, next) {
 
 async function createPeserta(req, res, next) {
   try {
-    const { nama } = req.body || {}
+    const { nama, kelas } = req.body || {}
     const clean = String(nama || '').trim()
     if (!clean) return res.status(400).json({ error: 'Nama wajib diisi' })
-
-    const targetNorm = normalizeName(clean)
-    // Fetch existing names and compare in JS to ensure space/case insensitivity
-    const existing = await prisma.peserta.findMany({ select: { id: true, nama: true } })
-    const dup = existing.find(p => normalizeName(p.nama) === targetNorm)
-    if (dup) {
-      return res.status(409).json({ error: 'Peserta sudah ada', peserta: dup })
+    
+    const kelasValue = kelas || 'A'
+    if (!['A', 'B', 'C'].includes(kelasValue)) {
+      return res.status(400).json({ error: 'Kelas harus A, B, atau C' })
     }
 
-    const created = await prisma.peserta.create({ data: { nama: clean } })
+    const targetNorm = normalizeName(clean)
+    // Fetch existing names in the same kelas and compare in JS to ensure space/case insensitivity
+    const existing = await prisma.peserta.findMany({ 
+      where: { kelas: kelasValue },
+      select: { id: true, nama: true, kelas: true } 
+    })
+    const dup = existing.find(p => normalizeName(p.nama) === targetNorm)
+    if (dup) {
+      return res.status(409).json({ error: 'Peserta sudah ada di kelas ini', peserta: dup })
+    }
+
+    const created = await prisma.peserta.create({ data: { nama: clean, kelas: kelasValue } })
     return res.status(201).json(created)
   } catch (e) { next(e) }
 }

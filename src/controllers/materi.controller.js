@@ -15,10 +15,16 @@ function formatHHmmJakarta(date) {
 
 async function createMateri(req, res, next) {
   try {
-    const { id_hari, judul_materi, pemateri, waktu_mulai, waktu_selesai } = req.body
+    const { id_hari, judul_materi, pemateri, waktu_mulai, waktu_selesai, kelas } = req.body
     if (!id_hari || !judul_materi || !waktu_mulai || !waktu_selesai) {
       return res.status(400).json({ error: 'id_hari, judul_materi, waktu_mulai, waktu_selesai are required' })
     }
+    
+    const kelasValue = kelas || 'A'
+    if (!['A', 'B', 'C'].includes(kelasValue)) {
+      return res.status(400).json({ error: 'Kelas harus A, B, atau C' })
+    }
+    
     // Verify hari exists
     const hari = await prisma.hari.findUnique({ where: { id: Number(id_hari) } })
     if (!hari) return res.status(404).json({ error: 'Hari not found' })
@@ -40,6 +46,7 @@ async function createMateri(req, res, next) {
         id_hari: Number(id_hari),
         judul_materi,
         pemateri: pemateri || null,
+        kelas: kelasValue,
         waktu_mulai: waktuMulai,
         waktu_selesai: waktuSelesai,
       }
@@ -51,8 +58,15 @@ async function createMateri(req, res, next) {
 async function getMateriByHari(req, res, next) {
   try {
     const id_hari = Number(req.params.id_hari)
+    const kelas = req.query.kelas // Optional filter
+    
+    const where = { id_hari }
+    if (kelas && ['A', 'B', 'C'].includes(kelas)) {
+      where.kelas = kelas
+    }
+    
     const items = await prisma.materi.findMany({ 
-      where: { id_hari }, 
+      where, 
       orderBy: { waktu_mulai: 'asc' } 
     })
     
@@ -99,11 +113,12 @@ async function updateMateri(req, res, next) {
     const existing = await prisma.materi.findUnique({ where: { id } })
     if (!existing) return res.status(404).json({ error: 'Materi not found' })
 
-    const { judul_materi, pemateri, waktu_mulai, waktu_selesai } = req.body || {}
+    const { judul_materi, pemateri, waktu_mulai, waktu_selesai, kelas } = req.body || {}
     const data = {}
 
     if (typeof judul_materi === 'string') data.judul_materi = judul_materi
     if (typeof pemateri !== 'undefined') data.pemateri = pemateri || null
+    if (kelas && ['A', 'B', 'C'].includes(kelas)) data.kelas = kelas
 
     // If time strings provided, combine with parent hari date
     if (typeof waktu_mulai === 'string' || typeof waktu_selesai === 'string') {
