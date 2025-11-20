@@ -11,10 +11,5 @@
       "src": "/(.*)",
       "dest": "index.js"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key"
-  }
+  ]
 }
